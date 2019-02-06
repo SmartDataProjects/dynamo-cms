@@ -11,6 +11,7 @@
 <track_requests> = $(DYNAMO_BASE)/exec/track_requests
 {siteinfo} = $(DYNAMO_BASE)/exec/siteinfo
 <enter_stucktransfers> = $(DYNAMO_BASE)/exec/enter_stucktransfers
+<decacher> = $(DYNAMO_BASE)/exec/decacher
 
 [SEQUENCE delta_update]
 & <updater> --config /etc/dynamo/updater_config.json --mode ReplicaDelta
@@ -76,3 +77,7 @@ WAIT 120
 [SEQUENCE stuck_transfers]
 | <enter_stucktransfers> --config /etc/dynamo/stuck_transfers.json
 WAIT 43200
+
+[SEQUENCE decacher]
+& <decacher>
+WAIT 10800
