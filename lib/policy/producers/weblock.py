@@ -136,7 +136,7 @@ class WebReplicaLock(object):
                         locked = False
                         locks = source.make_request(lock_url[0].replace('`','"'))
                         for lock in locks:
-                            if lock == 1:
+                            if lock:
                                 locked = True
                                 break
                         if not locked:
