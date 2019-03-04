@@ -90,28 +90,6 @@ class PhEDExReplicaInfoSource(ReplicaInfoSource):
         
         block_entries = self._phedex.make_request('blockreplicas', options, timeout = 7200)
 
-        # Removing blocks that have only block_replicas with group None
-        to_remove = set()
-
-        for i,block_entry in enumerate(block_entries):
-            valid_group = False
-
-            # if "site" contains wildcard, we can have multiple replicas per block
-            for replica_entry in block_entry['replica']:
-                if replica_entry['group'] != None:
-                    valid_group = True
-                    break
-                if replica_entry['subscribed'] == 'y':
-                    valid_group = True
-                    break                    
-
-            if not valid_group:
-                to_remove.add(i)
-
-        for i in sorted(to_remove, reverse=True):
-            LOG.info("Discarding %s from list of block replicas" % block_entries[i]['name'])
-            del block_entries[i]
-            
         parallelizer = Map()
         parallelizer.timeout = 7200
 
@@ -420,6 +398,7 @@ class PhEDExReplicaInfoSource(ReplicaInfoSource):
                 # temporarily make this a list
                 block_replica.file_ids = []
                 block_replica.size = 0
+                LOG.info("Incomplete %s" % str(block_replica))
 
         if 'file' in block_entry:
             for file_entry in block_entry['file']:
