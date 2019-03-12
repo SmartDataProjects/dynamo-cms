@@ -31,6 +31,7 @@ from dynamo.policy.producers.weblock import WebReplicaLock
 from dynamo.core.executable import inventory, authorizer
 from dynamo.registry.registry import RegistryDatabase
 from dynamo.history.history import HistoryDatabase
+from dynamo.utils.interface.mysql import MySQL
 
 LOG.info('Translating web-based replica locks into DB-based locks.')
 
@@ -56,8 +57,40 @@ if authorized:
         LOG.info('Applock is held by %s:%s. Waiting 60 seconds to retry.', user, service)
         time.sleep(60)
 
+
 try:
+
+    
+    try:
+        registry.db.lock_tables(write = ['detox_locks'], read = ['cached_copy_requests'])
+
+        sql = 'SELECT `item`, `sites`, `user`, `dn` FROM `cached_copy_requests` WHERE `status` = "new"'
+        columns = ('item', 'lock_date', 'expiration_date', 'user', 'dn', 'service_id', 'comment')
+        today = time.strftime('%Y-%m-%d', time.localtime(time.time()))
+        expiry = time.strftime('%Y-%m-%d', time.localtime(time.time() + 3600 * 24 * 60))
+        now = int(time.time())
+    
+        for item, site, user, dn in registry.db.query(sql):
+            values = (item, today, expiry, user, dn, 3, 'Caches locked by dynamo')
+
+            sql = 'INSERT INTO `detox_locks` (`item`, `lock_date`, `expiration_date`, `user`, `dn`, `service_id`, `comment`)'
+            sql += ' VALUES (%s, NOW(), %s, %s, %s, %s, \'Caches locked by dynamo\')'
+
+            registry.db.query(sql, item, expiry, user, dn, str(3))
+
+    except Exception as e:
+        LOG.info(e)
+
+    finally:
+        registry.db.unlock_tables()
+    
+
+
+
+
     # we process one source at a time, because each source registers mysql locks as a different user
+
+
     for name, source_conf in config.sources.items():
         try:
             service_id = registry.db.query('SELECT `id` FROM `user_services` WHERE `name` = %s', source_conf.service)[0]
@@ -127,6 +160,7 @@ try:
             num_unlocked += 1
     
         LOG.info('Locked: %d, Unlocked: %d', num_locked, num_unlocked)
+    
 
 finally:
     if authorized:
