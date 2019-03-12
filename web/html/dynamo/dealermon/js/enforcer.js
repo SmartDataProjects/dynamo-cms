@@ -19,7 +19,7 @@ function timeConverter(UNIX_timestamp){
 function initPage(rulename) {
 
     var ajaxInput_status = {
-	'url': 'http://dynamo.mit.edu/dynamo/dealermon/enforcer.php',
+	'url': document.baseURI,
         'data': {'getStatus': 1, 'whichRule': rulename},
         'success': function (data) { 
 	    drawStatus(data);

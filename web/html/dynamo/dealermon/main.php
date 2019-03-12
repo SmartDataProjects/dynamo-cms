@@ -4,6 +4,7 @@ include_once('db_conf.php');
 
 $track_transfers = '/var/spool/dynamo/dealermon/track_transfers';
 $track_phedex = '/var/spool/dynamo/dealermon/track_phedex';
+$custom_plots = '/var/spool/dynamo/dealermon/custom_plots';
 
 //Function to get an array of total aggregate requested data size ordered by their calendar date of request
 if ( (isset($_REQUEST['getHistory']) && $_REQUEST['getHistory']) ) {
@@ -92,7 +93,7 @@ function single_rrd_to_array($rrd,$rrdpath){
   $last = rrd_last($rrdpath . '/' . $rrd);
 
 
-  $options = array('LAST', sprintf('--start=%d', $last - 3600 * 24 * 6), sprintf('--end=%d', $last - 1));
+  $options = array('LAST', sprintf('--start=%d', $last - 3600 * 24 * 14), sprintf('--end=%d', $last - 1));
   $dump = rrd_fetch($rrdpath . '/' . $rrd, $options);//, count($options));                                                                                                                                 
 
 
@@ -152,6 +153,8 @@ function get_site_overview_from_csv($file){
   $total_copied = array();
   $stuck_total = array();
   $stuck_copied = array();
+  $really_stuck_total = array();
+  $really_stuck_copied = array();
   $nreplicas = array();
 
   for($i = 0; $i != count($file); $i++){    
@@ -175,12 +178,14 @@ function get_site_overview_from_csv($file){
 	$total_copied[$site] += intval($data[3]);
 	$stuck_total[$site] += intval($data[4]);
 	$stuck_copied[$site] += intval($data[5]);
+	$really_stuck_total[$site] += intval($data[6]);
+	$really_stuck_copied[$site] += intval($data[7]);
       }  
     }
   }
 
   foreach ($sites as $key => $site){
-    $csv_array[] = array($site, $nreplicas[$site], $total_total[$site], $total_copied[$site], $stuck_total[$site], $stuck_copied[$site]);
+    $csv_array[] = array($site, $nreplicas[$site], $total_total[$site], $total_copied[$site], $stuck_total[$site], $stuck_copied[$site], $really_stuck_total[$site], $really_stuck_copied[$site]);
     continue;
   }
 
@@ -204,6 +209,16 @@ if ( (isset($_REQUEST['getJson']) && $_REQUEST['getJson']) || (isset($_REQUEST['
 if ( !(isset($_REQUEST['getSummary'])) and !(isset($_REQUEST['getSiteCSVs'])) and !(isset($_REQUEST['getJson'])) and  !(isset($_REQUEST['getHistory'])) and  !(isset($_REQUEST['getCSVs'])) and !(isset($_REQUEST['getServices'])) and !(isset($_REQUEST['getSiteOverview']))){
 
   $html = file_get_contents(__DIR__ . '/dealermon.html');
+  if ((isset($_REQUEST['serviceId']) && $_REQUEST['serviceId'] == 1) or !(isset($_REQUEST['serviceId']))){
+    $html = str_replace('</body>','',$html);
+    $html = str_replace('</html>','',$html);
+    $htmld = file_get_contents($custom_plots . '/dynamo-sankey.html');
+    $htmld = str_replace('<body>','',$htmld);
+    $htmld = str_replace('<html>','',$htmld);
+    $htmld = str_replace('</html>','</center></html>',$htmld);
+    $htmld = "<center>" . $htmld;
+    $html = $html . $htmld;
+  }
   $html = str_replace('${SERVICE}', "$service_id", $html);
 
   echo $html;

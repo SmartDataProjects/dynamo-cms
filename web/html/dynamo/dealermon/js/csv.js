@@ -20,7 +20,8 @@ function timeConverter(UNIX_timestamp){
 function initPage(serviceId, site){
 
     var ajaxInput_sitecsvs = {
-	'url': 'http://dynamo.mit.edu/dynamo/dealermon/sites.php',
+//	'url': 'http://dynamo.mit.edu/dynamo/dealermon/sites.php',
+	'url': document.baseURI,
 	'data': {'getSiteCSVs': 1, 'serviceId': serviceId, 'site': site, 'norm': 1},
 	'success': function (data) {
 	    writeDownload(data, site, serviceId);
@@ -75,14 +76,10 @@ function writeDownload(data, site, serviceId){
 
 }
 
-
-
-
-
 //Creates HTML table with the information from Site CSV: links to PhEDEx API and progress graph
 function makeTable(data, site, serviceId){
     
-    document.getElementById("titleBox").innerHTML = "<h1>"+ site +"</h1>" + "<p1> Click Request ID for corresponding PhEDEx API.<br> Click Replica Name for corresponding progress graph.  </p1> <p1 style=color:#ff6666> <br>Red cells signify stuck transfers. (<1% copied in past 5 days) <p1>";
+    document.getElementById("titleBox").innerHTML = "<h1>"+ site +"</h1>" + "<p1> Click Request ID for corresponding PhEDEx API.<br> Click Replica Name for corresponding progress graph.  </p1> <p1 style=color:#ff6666> <br>Red cells signify stuck transfers. (<1% copied in past 14 days) <p1> <p1 style=color:#f49333> <br>Orange cells signify stuck transfers. (<1% copied in past 5 days) <p1>";
     var replicaTable = "<table><tr><th>Request ID:</th><th></th><th>Replica Name: </th><th>Copied (TB): </th><th>Total (TB): </th>"; 
     var nreplicas = 0;   
     
@@ -104,9 +101,13 @@ function makeTable(data, site, serviceId){
 	}
 
 	if (data[i][4] == 1){
-	    color = "#ff6666";
+            color = "#f49333";
 	    isstuck = true;
 	}
+        if (data[i][5] == 1){
+	    color = "#ff6666";
+            isstuck = true;
+        }
 	nreplicas +=1;
 
 	replicaTable += "<tr><td>" + id.link('https://cmsweb.cern.ch/phedex/datasvc/perl/prod/blockarrive?to_node=' + site +'&block=' + replicaname.replace("+","/") +"%23*") + "</td><td bgcolor=" + DorPcolor+ ">" + DorP + "</td><td bgcolor=" + color + " id='textButton"+replicaname+"'  style='cursor: pointer'>"  + replicaname + "</td><td>" + copied + "</td><td>" + total + "</td></tr>";

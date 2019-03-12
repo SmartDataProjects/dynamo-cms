@@ -10,8 +10,7 @@ function single_rrd_to_array($rrd,$rrdpath){
 
 
   $options = array('LAST', sprintf('--start=%d', $last - 3600 * 24 * 6), sprintf('--end=%d', $last - 1));
-  $dump = rrd_fetch($rrdpath . '/' . $rrd, $options);//, count($options));                                                                                                                                 
-
+  $dump = rrd_fetch($rrdpath . '/' . $rrd, $options);//, count($options));
 
   $there_entries = array();
   $enroute_entries = array();
@@ -64,12 +63,13 @@ date_default_timezone_set('America/New_York');
 $counter = 0;
 $var = "";
 foreach (glob($rrd_dir . '/*') as $filename) {
-  if ($counter > 0){
+  if ($counter > 0)
     break;
-  }
+
   $var = basename($filename, ".rrd");
   $counter += 1;
 }
+
 
 // Now preparing dropdown
 $html_replace = '<form method="GET">';
@@ -86,12 +86,11 @@ foreach (glob($rrd_dir . '/*.rrd') as $filename) {
 $html_replace = $html_replace .'</select>';
 $html_replace = $html_replace .'</form>';
 
-
 if (isset($_GET['rule'])){
   $var=$_GET['rule'];
 }
 
-$jsondata = file_get_contents("https://raw.githubusercontent.com/SmartDataProjects/dynamo-policies/master/common/enforcer_rules_physics.json");
+$jsondata = file_get_contents("/usr/share/dynamo-policies/common/enforcer_rules_physics.json");
 $lines = explode("\n", $jsondata);
 
 $array = json_decode($jsondata,true);
@@ -111,14 +110,13 @@ function get_sites($rulename) {
   $considered_sites = array();
   $considered_backends = array();
   $considered_lat = array();
-  $considered_long = array();
-
+  $considered_long = array();  
+  
   foreach($array['rules'] as $key => $value) {
+
     if ($key != $rulename){
       continue;
-    } 
-
-
+    }
 
     foreach($value['destinations'] as $pattern => $val) {
       $site_patterns = array();

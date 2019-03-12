@@ -321,7 +321,7 @@ function drawSummary(data,serviceId){
 
     }
 
-    while (total_time[0]<total_time[total_time.length-1]-5*24*60*60*1.02){
+    while (total_time[0]<total_time[total_time.length-1]-10*24*60*60*1.02){
 	total_time.splice(0,1);
 	total_copied.splice(0,1);
 	total_missing.splice(0,1);
@@ -344,9 +344,9 @@ function drawSummary(data,serviceId){
 
 
 
-    traces.push(makeTrace("Time", total_time.map(timeConverter), total_total_white, 'solid', 2, false, "rgba(0,0,0,0)", 'none'));
-    traces.push(makeTrace( MorT + " Missing", total_time.map(timeConverter), total_missing, 'solid', 2, true, color_high, ''));
-    traces.push(makeTrace(MorT + " Total", total_time.map(timeConverter), total_total, 'dot', 2, true, color_low, ''));    
+    traces.push(makeTrace("Time", total_time.map(timeConverter), total_total_white, 'solid', 3, false, "rgba(0,0,0,0)", 'none'));
+    traces.push(makeTrace( MorT + " Missing", total_time.map(timeConverter), total_missing, 'solid', 3, true, color_high, ''));
+    traces.push(makeTrace(MorT + " Total", total_time.map(timeConverter), total_total, 'dot', 3, true, color_low, ''));    
     //traces.push(makeTrace("Copied", total_time.map(timeConverter), total_copied, 'dot', 2, true, color_low, ''));
 
     //Compare:
@@ -369,7 +369,7 @@ function drawSummary(data,serviceId){
 	    
 	}
 	
-	while (total_time_phedex[0]<total_time_phedex[total_time_phedex.length-1]-5*24*60*60*1.02){
+	while (total_time_phedex[0]<total_time_phedex[total_time_phedex.length-1]-10*24*60*60*1.02){
 	    total_time_phedex.splice(0,1);
 	    total_copied_phedex.splice(0,1);
 	    total_total_phedex.splice(0,1);
@@ -425,14 +425,14 @@ function drawSummary(data,serviceId){
 	    traceorder: 'reversed',
 	    font: {
 		family: 'sans-serif',
-		size: 16,
-		color: '#000'
+		size: 20,
+		color: '#000000'
 	    },
 	},
 	font: {
 	    family: 'sans-serif',
-	    size: 14,
-	    color: '#7f7f7f'
+	    size: 18,
+	    color: '#000000'
 	},
 	paper_bgcolor: 'rgba(0,0,0,0)',
 	plot_bgcolor: 'rgba(0,0,0,0)'
@@ -459,7 +459,7 @@ function drawSiteOverview(data,serviceId) {
 
     var T2entries = [];
     var addT2data = function(name, total, copied, nreplicas, problematic, phedex, stuck_total, stuck_copied){
-	T2entries.push({name: name, total: total, copied: copied, nreplicas: nreplicas, problematic: problematic, url: url, stuck_total: stuck_total, stuck_copied: stuck_copied})
+	T2entries.push({name: name, total: total, copied: copied, nreplicas: nreplicas, problematic: problematic, url: url, stuck_total: stuck_total, stuck_copied: stuck_copied, really_stuck_total: really_stuck_total, really_stuck_copied: really_stuck_copied})
     };
 
     for(var i=0; i != data.length; i++){
@@ -472,6 +472,9 @@ function drawSiteOverview(data,serviceId) {
 	total_copied = data[i][3];
 	stuck_total = data[i][4];
 	stuck_copied = data[i][5];
+	//window.alert(data[i][7]);
+	really_stuck_total = data[i][6];
+	really_stuck_copied = data[i][7];
 
 	if (stuck_total != 0){
 	    problematic = true;
@@ -488,9 +491,11 @@ function drawSiteOverview(data,serviceId) {
     var data_total_stuck = [];
     var data_total_subtract_copied = [];
     var data_missing_stuck = [];
+    var data_missing_really_stuck = [];
     var data_missing_not_stuck = [];
     var data_copied = [];
     var data_copied_stuck = [];
+    var data_copied_really_stuck = [];
     var data_copied_not_stuck = [];
     var data_nreplicas = [];
     var data_problematic = [];
@@ -503,11 +508,13 @@ function drawSiteOverview(data,serviceId) {
 	data_total_stuck.push(T2entries[it2]['stuck_total']/1e+12);
 	data_total_subtract_copied.push(T2entries[it2]['total']/1e+12-T2entries[it2]['copied']/1e+12);
 
-	data_missing_stuck.push(T2entries[it2]['stuck_total']/1e+12-T2entries[it2]['stuck_copied']/1e+12);
+	data_missing_stuck.push(T2entries[it2]['stuck_total']/1e+12-T2entries[it2]['stuck_copied']/1e+12-(T2entries[it2]['really_stuck_total']/1e+12-T2entries[it2]['really_stuck_copied']/1e+12));
+	data_missing_really_stuck.push(T2entries[it2]['really_stuck_total']/1e+12-T2entries[it2]['really_stuck_copied']/1e+12);
 	data_missing_not_stuck.push((T2entries[it2]['total']/1e+12-T2entries[it2]['stuck_total']/1e+12)-(T2entries[it2]['copied']/1e+12-T2entries[it2]['stuck_copied']/1e+12));
 
 	data_copied.push(T2entries[it2]['copied']/1e+12);
-	data_copied_stuck.push(T2entries[it2]['stuck_copied']/1e+12);
+	data_copied_stuck.push(T2entries[it2]['stuck_copied']/1e+12-T2entries[it2]['really_stuck_copied']/1e+12);
+	data_copied_really_stuck.push(T2entries[it2]['really_stuck_copied']/1e+12);
 	data_copied_not_stuck.push(T2entries[it2]['copied']/1e+12-T2entries[it2]['stuck_copied']/1e+12);
 
 	if (T2entries[it2]['nreplicas']!=0)
@@ -532,8 +539,10 @@ function drawSiteOverview(data,serviceId) {
     var data_total_stuck_sorted = [];
     var data_total_subtract_copied_sorted = [];
     var data_missing_stuck_sorted = [];
+    var data_missing_really_stuck_sorted = [];
     var data_missing_not_stuck_sorted = [];
     var data_copied_stuck_sorted = [];
+    var data_copied_really_stuck_sorted = [];
     var data_copied_not_stuck_sorted = [];
     var data_nreplicas_sorted = [];
     var data_url_sorted = [];    
@@ -593,8 +602,10 @@ function drawSiteOverview(data,serviceId) {
 	    data_total_stuck_sorted[i] = data_total_stuck[final_indices[i]];
 	    data_total_subtract_copied_sorted[i] = data_total_subtract_copied[final_indices[i]];
 	    data_missing_stuck_sorted[i] = data_missing_stuck[final_indices[i]];
+	    data_missing_really_stuck_sorted[i] = data_missing_really_stuck[final_indices[i]];
 	    data_missing_not_stuck_sorted[i] = data_missing_not_stuck[final_indices[i]];
 	    data_copied_stuck_sorted[i] = data_copied_stuck[final_indices[i]];
+	    data_copied_really_stuck_sorted[i] = data_copied_really_stuck[final_indices[i]];
 	    data_copied_not_stuck_sorted[i] = data_copied_not_stuck[final_indices[i]];
 	    data_nreplicas_sorted[i] = data_nreplicas[final_indices[i]];
 	    data_url_sorted[i] = data_url[final_indices[i]];
@@ -610,7 +621,9 @@ function drawSiteOverview(data,serviceId) {
 		       data_copied_not_stuck_sorted,
 		       data_copied_stuck_sorted,
 		       data_missing_not_stuck_sorted,
-		       data_missing_stuck_sorted
+		       data_missing_stuck_sorted,
+            	       data_copied_really_stuck_sorted,
+	               data_missing_really_stuck_sorted
 		       ];
     
     var data_copied_not_stuck_plot = {
@@ -637,6 +650,25 @@ function drawSiteOverview(data,serviceId) {
 	xaxis: 'x2',
 	yaxis: 'y2',
 	name: 'Copied stuck',
+	showlegend: false,
+	marker: {
+            color: 'rgba(244,157,41,0.3)',
+            line: {
+		color: 'rgba(244,157,41,0.5)',
+		width: 1.0
+	    }
+	},
+	
+	type: 'bar'
+    };
+
+    
+    var data_copied_really_stuck_plot = {
+	x: data_sorted[0],
+	y: data_sorted[9],
+	xaxis: 'x2',
+	yaxis: 'y2',
+	name: 'Copied really stuck',
 	showlegend: false,
 	marker: {
 	    color: 'rgba(255,0,0,0.3)',
@@ -706,6 +738,23 @@ function drawSiteOverview(data,serviceId) {
 	name: 'Missing stuck',
 	showlegend: false,
 	marker: {
+	    color: 'rgba(244,157,41,1.0)',
+	    line: {
+		color: 'rgba(244,157,41,1.0)',
+		width: 1.0
+	    }
+	},
+	type: 'bar'
+    };
+
+    var data_total_really_stuck_plot = {
+	x: data_sorted[0],
+	y: data_sorted[10],
+	xaxis: 'x2',
+	yaxis: 'y2',
+	name: 'Missing really stuck',
+	showlegend: false,
+	marker: {
 	    color: 'rgba(255,0,0,1.0)',
 	    line: {
 		color: 'rgba(255,0,0,1.0)',
@@ -715,8 +764,7 @@ function drawSiteOverview(data,serviceId) {
 	type: 'bar'
     };
     
-    var data = [data_dummy, data_dummy_2, data_total_stuck_plot, data_total_not_stuck_plot, data_copied_stuck_plot, data_copied_not_stuck_plot];
-
+    var data = [data_dummy, data_dummy_2, data_total_really_stuck_plot, data_total_stuck_plot, data_total_not_stuck_plot, data_copied_really_stuck_plot, data_copied_stuck_plot, data_copied_not_stuck_plot];
 
     var service = " Dynamo + Other";
     var tapestring = "";
@@ -734,23 +782,55 @@ function drawSiteOverview(data,serviceId) {
 	tapestring = "";
     }
     var layout = {
+//	hoverinfo: 'none',
+//	hovermode: 'closest',
 	annotations: 
 	[{
-		xref: 'paper',
-		yref: 'paper',
-		x: 0.57,
-		xanchor: 'left',
-		y: 0.94,
-		yanchor: 'bottom',
-		text: 'Stuck transfers <br>(<1% within 5 days)',
-		showarrow: false,
-		font: {
+	        xref: 'paper',
+	        yref: 'paper',
+	        x: 0.58,
+	        xanchor: 'left',
+	        y: 0.955,
+	        yanchor: 'bottom',
+	        text: '<1% within 14 days',
+	        showarrow: false,
+	        font: {
+		        family: 'sans-serif',
+		        size: 16,
+		        color: '#000000'
+		    }
+	        },   
+	 {
+	     xref: 'paper',
+	     yref: 'paper',
+	     x: 0.58,
+	     xanchor: 'left',
+	     y: 0.895,
+	     yanchor: 'bottom',
+	     text: '<1% within 5 days',
+	     showarrow: false,
+	     font: {
+		     family: 'sans-serif',
+		     size: 16,
+		     color: '#000000'
+		 }
+	         },
+	 {
+	     xref: 'paper',
+	     yref: 'paper',
+	     x: 0.58,
+	     xanchor: 'left',
+	     y: 0.835,
+	     yanchor: 'bottom',
+	     text: 'moving',
+	     showarrow: false,
+	     font: {
 		    family: 'sans-serif',
 		    size: 16,
-		    color: '#000'
+		    color: '#000000'
 		}
 	    },   
-		{
+	 {
 		    xref: 'paper',
 		    yref: 'paper',
 		    x: tape_xposition,
@@ -763,9 +843,9 @@ function drawSiteOverview(data,serviceId) {
 		    font: {
 			family: 'sans-serif',
 			size: 16,
-			color: '#000'
+			color: '#000000'
 		    }
-		},    	    
+	 },    	    
     {
 	x: 0.55,
 	y: 0.975,
@@ -774,10 +854,36 @@ function drawSiteOverview(data,serviceId) {
 	text: '',
 	showarrow: true,
 	arrowhead: 7,
-	arrowsize: 2,
+	arrowsize: 3,
 	ax: 0,
 	ay: -5,
 	arrowcolor:'rgba(255,0,0,1)'
+    },
+    {
+	x: 0.55,
+	y: 0.915,
+	xref: 'paper',
+	yref: 'paper',
+	text: '',
+	showarrow: true,
+	arrowhead: 7,
+	arrowsize: 3,
+	ax: 0,
+	ay: -5,
+	arrowcolor:'rgba(244,157,41,1)'
+    },
+    {
+	x: 0.55,
+	y: 0.855,
+	xref: 'paper',
+	yref: 'paper',
+	text: '',
+	showarrow: true,
+	arrowhead: 7,
+	arrowsize: 3,
+	ax: 0,
+	ay: -5,
+	arrowcolor:'rgba(0, 103, 113, 0.6)'
     }],
 	xaxis2: {domain: [0, 1],
 		 anchor: 'y2',
@@ -803,8 +909,8 @@ function drawSiteOverview(data,serviceId) {
 	
 	
 	xaxis: {
-	    tickangle: 45,
-	    //showticklabels: false
+	    tickangle: 90,
+	    showticklabels: false
 	},
 	yaxis: {
 	    range: [0, 1.3*Math.max(...data_sorted[2])],
@@ -823,14 +929,14 @@ function drawSiteOverview(data,serviceId) {
 	    traceorder: 'reversed',
 	    font: {
 		family: 'sans-serif',
-		size: 16,
+		size: 20,
 		color: '#000'
 	    },
 	},
 	font: {
 	    family: 'sans-serif',
-	    size: 14,
-	    color: '#7f7f7f'
+	    size: 16,
+	    color: '#000000'
 	},
 	shapes:    {
 	    type: 'line',
@@ -852,7 +958,7 @@ function drawSiteOverview(data,serviceId) {
     Plotly.newPlot('SiteOverview', data, layout);
     
     siteoverview.on('plotly_click', function(data){
-	    if(data.points.length === 4) {
+	    if(data.points.length === 6) {
 		var link = data_url_sorted[data.points[0].pointNumber];		
 		window.open(link,"_blank");
 	    }
