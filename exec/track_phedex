@@ -157,11 +157,11 @@ def get_copy_status(request_id):
         LOG.error('Failed to get copy status for request %d', request_id)
         return request_id, {}
 
-def is_transfer_stuck(rrd_file):
+def is_transfer_stuck(rrd_file, ndays):
     try:
         # LAST returns a tuple ((start, end, something), something, records)
         lasttime = rrdtool.fetch(rrd_file, "LAST")[0][1]
-        firsttime = lasttime - 6*24*3600
+        firsttime = lasttime - (ndays+1)*24*3600
         result = rrdtool.fetch(rrd_file, "LAST", '-s', str(firsttime), '-e', str(lasttime))
     except:
         return 0
@@ -172,11 +172,11 @@ def is_transfer_stuck(rrd_file):
     while len(rows) != 0 and (rows[-1][1] is None or rows[-1][1] == 0):
         rows.pop()
 
-    if len(rows) > 480:
-        if rows[-1][0] is None or rows[-481][0] is None:
+    if len(rows) > 96*ndays:
+        if rows[-1][0] is None or rows[-1*(96*ndays+1)][0] is None:
             # Copied is None - you can't tell if the transfer is stuck..
             return 0
-        elif (rows[-1][0] - rows[-481][0])/rows[-1][1] < 0.01:
+        elif (rows[-1][0] - rows[-1*(96*ndays+1)][0])/rows[-1][1] < 0.01:
             return 1
 
     return 0
@@ -203,8 +203,10 @@ for sitename, request_ids in records.iteritems():
         "ongoing": 0., # number of ongoing transfers
         "total": 0., # total of datasets that are not 100%
         "total_stuck": 0., # out of which is stuck
+        "total_really_stuck": 0., # out of which is really stuck
         "copied": 0., # copied volume, out of datasets that are not 100%
-        "copied_stuck": 0. # out of which is stuck
+        "copied_stuck": 0., # out of which is stuck
+        "copied_really_stuck": 0. # out of which is really stuck       
     }
 
     dataset_details = []
@@ -259,7 +261,8 @@ for sitename, request_ids in records.iteritems():
                     # RRD does not exist yet
                     create_rrd(rrd_file)
 
-                is_stuck = is_transfer_stuck(rrd_file)
+                is_stuck = is_transfer_stuck(rrd_file,5)
+                is_really_stuck = is_transfer_stuck(rrd_file,13)
 
                 # Update the RRD file
 
@@ -281,15 +284,18 @@ for sitename, request_ids in records.iteritems():
                 site_ongoing_totals['ongoing'] += 1
                 site_ongoing_totals['total'] += total
                 site_ongoing_totals['total_stuck'] += is_stuck * total
+                site_ongoing_totals['total_really_stuck'] += is_really_stuck * total
                 site_ongoing_totals['copied'] += copied
                 site_ongoing_totals['copied_stuck'] += is_stuck * copied
+                site_ongoing_totals['copied_really_stuck'] += is_really_stuck * copied
 
                 dataset_details.append({
                     'id': request_id,
                     'name': dataset_name,
                     'copied': copied,
                     'total': total,
-                    'stuck': is_stuck
+                    'stuck': is_stuck,
+                    'really_stuck': is_really_stuck
                 })
 
             elif authorized:
@@ -302,7 +308,7 @@ for sitename, request_ids in records.iteritems():
 
     if authorized:
         with open("%s/filelist.txt" % site_rrd_dir, "w") as csvfilelist:
-            fieldnames = ["id", "name", "copied", "total", "stuck"]
+            fieldnames = ["id", "name", "copied", "total", "stuck", "really_stuck"]
     
             writer = csv.DictWriter(csvfilelist, fieldnames = fieldnames)
             writer.writerow(dict(zip(fieldnames, fieldnames)))
@@ -314,8 +320,10 @@ for sitename, request_ids in records.iteritems():
 
 if authorized:
     with open("%s/overview.txt" % rrd_dir, "w") as overview:
-        fieldnames = ["sitename", "ongoing", "total", "copied", "total_stuck", "copied_stuck"]
-    
+        fieldnames = ["sitename", "ongoing", "total", "copied", \
+                      "total_stuck", "copied_stuck", "total_really_stuck", \
+                      "copied_really_stuck"]    
+
         writer = csv.DictWriter(overview, fieldnames = fieldnames)
         writer.writerow(dict(zip(fieldnames, fieldnames)))
     
