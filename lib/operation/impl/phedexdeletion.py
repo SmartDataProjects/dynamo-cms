@@ -23,7 +23,7 @@ class PhEDExDeletionInterface(DeletionInterface):
         self._history = HistoryDatabase(config.get('history', None))
 
         self.auto_approval = config.get('auto_approval', True)
-        self.allow_tape_deletion = config.get('allow_tape_deletion', False)
+        self.allow_tape_deletion = config.get('allow_tape_deletion', True)
         self.tape_auto_approval = config.get('tape_auto_approval', False)
 
         self.deletion_chunk_size = config.get('chunk_size', 50.) * 1.e+12
@@ -37,6 +37,10 @@ class PhEDExDeletionInterface(DeletionInterface):
 
         if site.storage_type == Site.TYPE_MSS and not self.allow_tape_deletion:
             LOG.warning('Deletion from MSS not allowed by configuration.')
+            return []
+
+        if self.allow_tape_deletion and self.auto_approval:
+            LOG.warning('You cannot have auto-approved tape deletions. Set auto-approval to False.')
             return []
 
         # execute the deletions in two steps: one for dataset-level and one for block-level
