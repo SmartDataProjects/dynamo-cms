@@ -4,6 +4,7 @@ import sys
 import os
 import time
 import collections
+import pandas as pd
 from argparse import ArgumentParser
 
 parser = ArgumentParser(description = 'Generate SitesInfo and RemainingDatasets files for Unified.')
@@ -42,6 +43,11 @@ if args.out_path:
     sitesinfo = open(args.out_path + '/SitesInfo.txt', 'w')
 else:
     sitesinfo = sys.stdout
+
+
+physics_quotas = {}
+aops_quotas = {}
+dops_quotas = {}
 
 sitesinfo.write('#\n')
 sitesinfo.write('#- S I T E S  I N F O R M A T I O N ----\n')
@@ -92,6 +98,11 @@ for partition in config.partitions:
             continue
 
         status, quota = sites_info[site]
+        if partition == "Physics":
+            physics_quotas[site] = quota
+        if partition == "DataOps":
+            dops_quotas[site] = quota
+            aops_quotas[site] = physics_quotas[site] - dops_quotas[site]
         try:
             protect, delete, keep = sites_usage[site]
         except KeyError:
@@ -217,3 +228,15 @@ for site in dataset_lists:
         remaining.close()
         
 LOG.info('Finished writing ASCII SiteInfo.')
+
+sites = [key for key in physics_quotas.iterkeys()]
+pquota = [physics_quotas[s] for s in sites]
+aquota = [aops_quotas[s] for s in sites]
+dquota = [dops_quotas[s] for s in sites]
+
+
+d = {'Site': sites, 'Physics': pquota, 'AnalysisOps': aquota, 'DataOps': dquota}
+df = pd.DataFrame(data=d)
+df.to_csv(args.out_path+'/SitesInfo.csv',index=False)
+
+LOG.info('Finished writing Pandas dataframe.')
