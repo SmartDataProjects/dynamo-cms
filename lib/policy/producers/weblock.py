@@ -189,8 +189,6 @@ class WebReplicaLock(object):
 
             elif content_type == WebReplicaLock.CMSWEB_LIST_OF_DATASETS:
                 # data['result'] -> simple list of datasets
-                LOG.info("CMSWEB_LIST_OF_DATASETS")
-                #LOG.info(data['result'])
                 for dataset_name in data['result']:
                     if dataset_name is None:
                         LOG.debug('Dataset name %s None found in %s', (dataset_name, source.url_base))
@@ -212,9 +210,7 @@ class WebReplicaLock(object):
                         all_locks.append((dataset, None))
 
             elif content_type == WebReplicaLock.CMSWEB_LIST_OF_PARENT_DATASETS:
-                # data['result']['parentlocks'] -> simple list of datasets
-                LOG.info("CMSWEB_LIST_OF_PARENT_DATASETS")
-                LOG.info(data['result'][0]['parentlocks'])
+                # data['result'][0]['parentlocks'] -> simple list of datasets
                 for dataset_name in data['result'][0]['parentlocks']:
                     if dataset_name is None:
                         LOG.debug('Dataset name %s None found in %s', (dataset_name, source.url_base))
