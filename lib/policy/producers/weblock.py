@@ -4,6 +4,7 @@ import urllib2
 import fnmatch
 import re
 import time
+import sys
 
 import dynamo.utils.interface.webservice as webservice
 from dynamo.dataformat import Configuration, Block, ObjectError
@@ -20,7 +21,7 @@ class WebReplicaLock(object):
     produces = ['locked_blocks']
 
     # content types
-    LIST_OF_DATASETS, CMSWEB_LIST_OF_DATASETS, SITE_TO_DATASETS = range(3)
+    LIST_OF_DATASETS, CMSWEB_LIST_OF_DATASETS, SITE_TO_DATASETS, CMSWEB_LIST_OF_PARENT_DATASETS = range(4)
 
     def __init__(self, config):
         self._sources = {} # {name: (RESTService, content type, site pattern, lock of locks)}
@@ -145,6 +146,8 @@ class WebReplicaLock(object):
                         LOG.info('Locks are being produced. Waiting 60 seconds.')
                         time.sleep(60)
                 except:
+                    e = sys.exc_info()[0]
+                    LOG.error(e)
                     pass
                         
             if site_pattern is None:
@@ -156,9 +159,11 @@ class WebReplicaLock(object):
 
             try:
                 data = source.make_request()
+                LOG.info("This was a standard WEB RESTAPI request")
             except TypeError:
                 # OracleService expects a query text
                 data = source.make_request(lock_url[1].replace('`','"'))
+                LOG.info("This was an Oracle DB request")
 
             if content_type == WebReplicaLock.LIST_OF_DATASETS:
                 # simple list of datasets
@@ -184,9 +189,35 @@ class WebReplicaLock(object):
 
             elif content_type == WebReplicaLock.CMSWEB_LIST_OF_DATASETS:
                 # data['result'] -> simple list of datasets
+                LOG.info("CMSWEB_LIST_OF_DATASETS")
+                #LOG.info(data['result'])
                 for dataset_name in data['result']:
                     if dataset_name is None:
-                        LOG.debug('Dataset name None found in %s', source.url_base)
+                        LOG.debug('Dataset name %s None found in %s', (dataset_name, source.url_base))
+                        continue
+
+                    try:
+                        dataset = inventory.datasets[dataset_name]
+                    except KeyError:
+                        LOG.debug('Unknown dataset %s in %s', dataset_name, source.url_base)
+                        continue
+
+                    if site_re is not None:
+                        for replica in dataset.replicas:
+                            if not site_re.match(replica.site.name):
+                                continue
+    
+                            all_locks.append((dataset, replica.site))
+                    else:
+                        all_locks.append((dataset, None))
+
+            elif content_type == WebReplicaLock.CMSWEB_LIST_OF_PARENT_DATASETS:
+                # data['result']['parentlocks'] -> simple list of datasets
+                LOG.info("CMSWEB_LIST_OF_PARENT_DATASETS")
+                LOG.info(data['result'][0]['parentlocks'])
+                for dataset_name in data['result'][0]['parentlocks']:
+                    if dataset_name is None:
+                        LOG.debug('Dataset name %s None found in %s', (dataset_name, source.url_base))
                         continue
 
                     try:
